@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
 <style>
 *{
   box-sizing:border-box;
@@ -17,38 +18,18 @@ body{
   background:#f4f6fa;
   margin:0;
   padding:20px;
-  display:flex;
-  gap:20px;
 }
 
 /* 모바일 */
-@media (max-width: 768px){
-  body{
-    padding-left:20px;
-    padding-right:20px;
-  }
 
-  #captureArea{
-    padding-right:20px;
-    flex-direction:column;
-  }
 
-  #rightPanel{
-    width:100% !important;
-  }
-}
-
-#captureArea{
-  display:flex;
-  gap:20px;
-  align-items:flex-start;
-}
 
 #leftPanel,
 #rightPanel{
   display:flex;
   flex-direction:column;
   align-items:stretch;
+  flex-shrink:0;
 }
 
 #rightPanel{
@@ -290,6 +271,18 @@ body{
   margin-bottom:8px;
 }
 
+#plannerViewport{
+  width:100%;
+  overflow:hidden;
+}
+
+#captureArea{
+  display:flex;
+  gap:20px;
+  align-items:flex-start;
+  transform-origin: top left;
+}
+
 #resetBtn{
   width:100%;
   padding:10px;
@@ -308,31 +301,33 @@ body{
 </head>
 
 <body>
-
-<div id="captureArea">
-  <div id="leftPanel">
-    <div id="plannerHeader">
-      <input id="plannerTitle">
-    </div>
-    <div id="grid"></div>
-  </div>
-
-  <div id="rightPanel">
-    <div id="side">
-      <h3>📌 일정 목록</h3>
-      <button id="addFromSide">📋 일정 추가</button>
-      <div id="list"></div>
-
-      <h3 style="margin-top:12px;">📌 투두 목록</h3>
-      <button id="addTodo">✅ 투두 추가</button>
-      <div id="todoList"></div>
+<div id="plannerViewport">
+  <div id="captureArea">
+    <div id="leftPanel">
+      <div id="plannerHeader">
+        <input id="plannerTitle">
+      </div>
+      <div id="grid"></div>
     </div>
 
+    <div id="rightPanel">
+      <div id="side">
+        <h3>📌 일정 목록</h3>
+        <button id="addFromSide">📋 일정 추가</button>
+        <div id="list"></div>
 
-    <button id="captureBtn">📸 화면 저장</button>
-    <button id="resetBtn">🗑 화면 초기화</button>
+        <h3 style="margin-top:12px;">📌 투두 목록</h3>
+        <button id="addTodo">✅ 투두 추가</button>
+        <div id="todoList"></div>
+      </div>
+
+
+      <button id="captureBtn">📸 화면 저장</button>
+      <button id="resetBtn">🗑 화면 초기화</button>
+    </div>
   </div>
 </div>
+
 
 <div class="modal" id="modal">
   <div class="modal-box">
@@ -494,6 +489,28 @@ function clearDragPreview(){
   document.querySelectorAll(".cell.drag-preview").forEach(c=>c.classList.remove("drag-preview"));
 }
 
+function fitPlannerToScreen(){
+  const viewport = document.getElementById("plannerViewport");
+  const captureArea = document.getElementById("captureArea");
+
+  if(!viewport || !captureArea) return;
+
+  captureArea.style.transform = "scale(1)";
+
+  const availableWidth = viewport.clientWidth;
+  const contentWidth = captureArea.scrollWidth;
+
+  if(contentWidth === 0) return;
+
+  const scale = Math.min(1, availableWidth / contentWidth);
+
+  captureArea.style.transform = `scale(${scale})`;
+  viewport.style.height = `${captureArea.offsetHeight * scale}px`;
+}
+
+window.addEventListener("resize", fitPlannerToScreen);
+fitPlannerToScreen();
+
 function paintDragPreview(s,e){
   clearDragPreview();
   for(let i=s;i<=e;i++){
@@ -548,7 +565,7 @@ document.addEventListener("pointerup", ()=>{
 
   let s = Math.min(dragStartIndex, dragEndIndex);
   let e = Math.max(dragStartIndex, dragEndIndex) + 1;
-  
+
   if(hasOverlap(s, e)){
     alert("⚠ 이미 등록된 일정과 시간이 겹칩니다!");
     return;
@@ -935,6 +952,9 @@ captureBtn.onclick = ()=>{
 renderPresetColors();
 setSelectedColor(getRandomColor());
 loadAll();
+fitPlannerToScreen();
+
+window.addEventListener("resize", fitPlannerToScreen);
 </script>
 </body>
 </html>
