@@ -2,326 +2,949 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>월간 달력</title>
+<title>DragTime</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
 <style>
-*{box-sizing:border-box;}
+*{ box-sizing:border-box; }
 
 body{
-  margin:0;
   font-family:Arial, sans-serif;
-  background:#f5f7fb;
-  padding:30px;
+  background:#f4f6fa;
+  margin:0;
+  padding:20px;
+  display:flex;
+  gap:20px;
 }
 
-#topBar{
+/* 모바일 */
+@media (max-width: 768px){
+  body{
+    padding-left:20px;
+    padding-right:20px;
+  }
+
+  #captureArea{
+    padding-right:20px;
+    flex-direction:column;
+  }
+
+  #rightPanel{
+    width:100% !important;
+  }
+}
+
+#captureArea{
+  display:flex;
+  gap:20px;
+  align-items:flex-start;
+}
+
+#leftPanel,
+#rightPanel{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+}
+
+#rightPanel{
+  width:280px;
+}
+
+#plannerHeader{
+  background:white;
+  border:1px solid #ccc;
+  border-radius:8px;
+  padding:14px 16px;
+  margin-bottom:12px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.03);
   display:flex;
   align-items:center;
-  justify-content:flex-start;
-  gap:14px;
-  margin-bottom:20px;
+}
+
+#plannerTitle{
+  width:100%;
+  border:none;
+  outline:none;
+  font-size:18px;
+  font-weight:600;
+  background:transparent;
+}
+
+#grid{
+  display:grid;
+  grid-template-columns:90px repeat(12,20px);
+  border:1px solid #ccc;
+  background:white;
+  border-radius:10px;
+  overflow:hidden;
+  touch-action:none;
+}
+
+#side{
+  width:100%;
+  background:white;
+  border:1px solid #ccc;
+  border-radius:8px;
+  padding:10px;
+  height:auto;
+  overflow:visible;
+  margin-bottom:10px;
+}
+
+#side h3{text-align:center;}
+
+#dateBar{
+  background:#ffd84d;
+  border:1px solid #ccc;
+  border-radius:8px;
+  padding:10px 16px;
+  margin-bottom:10px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.03);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+#prevDay,
+#nextDay{
+  border:none;
+  background:transparent;
+  font-size:16px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+#datePicker{
+  border:none;
+  font-size:13px;
+  background:transparent;
+  text-align:center;
+  width:100%;
+  font-weight:600;
+}
+
+.side-item{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  border:1px solid #ddd;
+  border-radius:8px;
+  padding:6px;
+  padding-right:80px;
+  margin-bottom:6px;
+  font-size:12px;
+  position:relative;
+  overflow:hidden;
+}
+
+.side-item .text-box{
+  flex:1;
+  min-width:0;
+  max-width:100%;
+  word-break:break-word;
+  overflow-wrap:break-word;
+  white-space:normal;
+}
+
+.delete-btn{
+  position:absolute;
+  top:6px;
+  border:none;
+  color:white;
+  border-radius:4px;
+  font-size:10px;
+  cursor:pointer;
+  padding:2px 6px;
+}
+
+.color-box{width:16px;height:16px;border-radius:4px;}
+
+.time{
+  height:40px;width:90px;background:#f1f3f6;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;
+  box-shadow: inset -1px 0 0 #ddd, inset 0 -1px 0 #ddd;
+}
+
+.cell{
+  height:40px;
+  width:20px;
+  cursor:pointer;
+  box-shadow: inset -1px 0 0 #eee, inset 0 -1px 0 #eee;
+}
+
+.cell.v-strong{
+  box-shadow: inset -1px 0 0 #cfcfcf, inset 0 -1px 0 #eee;
+}
+
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.5);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:999;
+}
+
+.modal-box{
+  background:white;
+  padding:20px;
+  border-radius:8px;
+  width:300px;
+  max-width:90%;
+}
+
+.modal-box input,
+.modal-box textarea,
+.modal-box select{
+  width:100%;
+  box-sizing:border-box;
+  font-size:16px;
+}
+
+#colorInput{
+  width:60px;
+  height:36px;
+  padding:0;
+  border:none;
+  background:none;
+}
+#colorPickerWrap{
+  display:flex;
+  align-items:center;
+  gap:8px;
   flex-wrap:wrap;
 }
 
-.month-nav-btn{
-  border:none;
-  background:white;
-  width:52px;
-  height:52px;
-  border-radius:14px;
-  font-size:24px;
+#presetColors{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.color-chip{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  border:2px solid transparent;
   cursor:pointer;
-  box-shadow:0 4px 14px rgba(0,0,0,0.05);
+  box-shadow:0 1px 4px rgba(0,0,0,0.15);
   transition:.15s ease;
 }
 
-.month-nav-btn:hover{
-  transform:translateY(-2px);
+.color-chip:hover{
+  transform:scale(1.08);
 }
 
-h1{
-  margin:0;
-  font-size:56px;
-  font-weight:800;
+.color-chip.active{
+  border-color:#111;
+  transform:scale(1.08);
 }
 
-#calendar{
-  display:grid;
-  grid-template-columns:repeat(7, 1fr);
-  gap:14px;
-  max-width:1200px;
-}
-#weekdays{
-  display:grid;
-  grid-template-columns:repeat(7, 1fr);
-  gap:14px;
-  max-width:1200px;
-  margin-bottom:14px;
-}
-
-.weekday{
-  background:transparent;
-  text-align:center;
-  font-size:18px;
-  font-weight:700;
-  color:#666;
-  padding:8px 0;
-}
-
-.weekday.sunday{
-  color:#ff6b6b;
-}
-
-.weekday.saturday{
-  color:#4d7cff;
-}
-
-.day{
-  background:white;
+#colorInput{
+  width:28px;
+  height:28px;
+  padding:0;
   border:none;
-  border-radius:18px;
-  min-height:90px;
-  font-size:22px;
+  background:none;
   cursor:pointer;
-  box-shadow:0 4px 14px rgba(0,0,0,0.05);
-  transition:.15s ease;
-  position:relative;
 }
-.empty-day{
-  background:transparent;
+
+#addFromSide{
+  width:100%;
+  margin-bottom:10px;
+  padding:6px;
   border:none;
-  min-height:90px;
+  border-radius:6px;
+  background:#3f8cff;
+  color:white;
+  cursor:pointer;
 }
 
-@media (max-width: 768px){
-  .empty-day{
-    min-height:60px;
-  }
-}
-
-.day:hover{
-  transform:translateY(-2px);
-}
-
-.day.has-data{
-  outline:3px solid #a8c7ff;
-  background:#f7fbff;
-}
-
-.day small{
-  position:absolute;
-  left:12px;
-  bottom:10px;
-  font-size:12px;
-  color:#3f8cff;
-}
-
-#overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.45);
-  display:none;
-  justify-content:center;
-  align-items:center;
-  z-index:9999;
-  padding:20px;
-}
-
-#modalWindow{
-  width:min(1100px, 95vw);
-  height:min(800px, 90vh);
-  background:white;
-  border-radius:22px;
-  overflow:hidden;
-  box-shadow:0 30px 80px rgba(0,0,0,0.28);
-  display:flex;
-  flex-direction:column;
-}
-
-#modalHeader{
-  height:58px;
-  background:#f5f6fa;
-  border-bottom:1px solid #e5e7eb;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 16px;
-  flex-shrink:0;
-}
-
-#modalTitle{
-  font-weight:700;
-}
-
-#closeBtn{
+#addTodo{
+  width:100%;
+  margin-bottom:10px;
+  padding:6px;
   border:none;
+  border-radius:6px;
+  background:#00b894;
+  color:white;
+  cursor:pointer;
+}
+
+#captureBtn{
+  width:100%;
+  padding:10px;
+  border:none;
+  border-radius:8px;
   background:#111;
   color:white;
-  border-radius:10px;
-  padding:8px 14px;
   cursor:pointer;
+  font-size:13px;
+  margin-bottom:8px;
 }
 
-#plannerFrame{
+#resetBtn{
   width:100%;
-  height:100%;
+  padding:10px;
   border:none;
+  border-radius:8px;
+  background:#ff5c5c;
+  color:white;
+  cursor:pointer;
+  font-size:13px;
 }
 
-@media (max-width: 768px){
-  body{padding:16px;}
-  h1{font-size:36px;}
-  #calendar{grid-template-columns:repeat(7, 1fr); gap:6px;}
-  #weekdays{grid-template-columns:repeat(7, 1fr); gap:6px;}
-  .day{min-height:60px; font-size:16px;}
-  .weekday{font-size:15px;}
-  .month-nav-btn{
-    width:44px;
-    height:44px;
-    font-size:20px;
-  }
+.drag-preview{
+  background: rgba(63,140,255,0.3);
 }
 </style>
 </head>
+
 <body>
 
-<div id="topBar">
-  <button class="month-nav-btn" id="prevMonthBtn">◀</button>
-  <h1 id="monthTitle"></h1>
-  <button class="month-nav-btn" id="nextMonthBtn">▶</button>
-</div>
-
-<div id="weekdays">
-  <div class="weekday sunday">일</div>
-  <div class="weekday">월</div>
-  <div class="weekday">화</div>
-  <div class="weekday">수</div>
-  <div class="weekday">목</div>
-  <div class="weekday">금</div>
-  <div class="weekday saturday">토</div>
-</div>
-
-<div id="calendar"></div>
-
-<div id="overlay">
-  <div id="modalWindow">
-    <div id="modalHeader">
-      <div id="modalTitle">플래너</div>
-      <button id="closeBtn">닫기</button>
+<div id="captureArea">
+  <div id="leftPanel">
+    <div id="plannerHeader">
+      <input id="plannerTitle">
     </div>
-    <iframe id="plannerFrame"></iframe>
+    <div id="grid"></div>
+  </div>
+
+  <div id="rightPanel">
+    <div id="side">
+      <h3>📌 일정 목록</h3>
+      <button id="addFromSide">📋 일정 추가</button>
+      <div id="list"></div>
+
+      <h3 style="margin-top:12px;">📌 투두 목록</h3>
+      <button id="addTodo">✅ 투두 추가</button>
+      <div id="todoList"></div>
+    </div>
+
+    <div id="dateBar">
+      <button id="prevDay">◀</button>
+      <input type="date" id="datePicker">
+      <button id="nextDay">▶</button>
+    </div>
+
+    <button id="captureBtn">📸 화면 저장</button>
+    <button id="resetBtn">🗑 화면 초기화</button>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h3 id="modalTitle">일정 입력</h3>
+    <input id="titleInput" placeholder="제목"><br><br>
+    <textarea id="detailInput" placeholder="세부내용"></textarea><br><br>
+
+    <div id="timeFields">
+      <label>시작</label><select id="editStart"></select><br><br>
+      <label>종료</label><select id="editEnd"></select><br><br>
+    </div>
+
+    <div id="colorPickerWrap">
+      <div id="presetColors"></div>
+      <input type="color" id="colorInput">
+    </div><br>
+    <button id="save">저장</button>
+    <button id="cancel">취소</button>
   </div>
 </div>
 
 <script>
-let currentYear = new Date().getFullYear();
-let currentMonth = new Date().getMonth() + 1;
+const params = new URLSearchParams(location.search);
+let currentDate = params.get("date") || new Date().toISOString().slice(0,10);
 
-const monthTitle = document.getElementById("monthTitle");
-const calendar = document.getElementById("calendar");
-const overlay = document.getElementById("overlay");
-const plannerFrame = document.getElementById("plannerFrame");
-const modalTitle = document.getElementById("modalTitle");
-const closeBtn = document.getElementById("closeBtn");
-const prevMonthBtn = document.getElementById("prevMonthBtn");
-const nextMonthBtn = document.getElementById("nextMonthBtn");
-
-function pad(n){
-  return String(n).padStart(2,"0");
+function getStorageKey(){
+  return "dragtime_data_" + currentDate;
 }
 
-function getDateString(day){
-  return `${currentYear}-${pad(currentMonth)}-${pad(day)}`;
-}
-
-function hasData(dateStr){
-  return !!localStorage.getItem("dragtime_data_" + dateStr);
-}
-
-function updateMonthTitle(){
-  monthTitle.textContent = `${currentYear}년 ${currentMonth}월`;
-}
-
-function openPlanner(day){
-  const dateStr = getDateString(day);
-  modalTitle.textContent = `${currentYear}년 ${currentMonth}월 ${day}일 플래너`;
-  plannerFrame.src = `dragtime.html?date=${dateStr}`;
-  overlay.style.display = "flex";
-}
-
-function closePlanner(){
-  overlay.style.display = "none";
-  plannerFrame.src = "";
-  renderCalendar();
-}
-
-closeBtn.onclick = closePlanner;
-
-overlay.addEventListener("click", (e)=>{
-  if(e.target === overlay){
-    closePlanner();
+function resetAll(){
+  if(confirm("⚠ 모든 데이터가 삭제됩니다.\n완전히 초기화할까요?")){
+    localStorage.removeItem(getStorageKey());
+    location.reload();
   }
-});
+}
 
-prevMonthBtn.onclick = ()=>{
-  currentMonth--;
+const presetColorList = [
+  "#ff5b59",
+  "#ff9b56",
+  "#ffb954",
+  "#ffdd50",
+  "#cdff4e",
+  "#63ff51",
+  "#55e1ff",
+  "#58b1ff",
+  "#5b68ff",
+  "#ff58c4"
+];
 
-  if(currentMonth < 1){
-    currentMonth = 12;
-    currentYear--;
-  }
+function getRandomColor(){
+  return presetColorList[Math.floor(Math.random()*presetColorList.length)];
+}
 
-  renderCalendar();
-};
+const datePicker = document.getElementById("datePicker");
+const prevDay = document.getElementById("prevDay");
+const nextDay = document.getElementById("nextDay");
+const plannerTitleInput = document.getElementById("plannerTitle");
 
-nextMonthBtn.onclick = ()=>{
-  currentMonth++;
+const baseDate = new Date(currentDate);
+const yy = String(baseDate.getFullYear()).slice(2);
+const mm = String(baseDate.getMonth()+1).padStart(2,"0");
+const dd = String(baseDate.getDate()).padStart(2,"0");
+plannerTitleInput.value = `📆 Drag Time ${yy}${mm}${dd}`;
+plannerTitleInput.addEventListener("input", saveAll);
 
-  if(currentMonth > 12){
-    currentMonth = 1;
-    currentYear++;
-  }
+const grid=document.getElementById("grid");
+const listBox=document.getElementById("list");
+const todoBox=document.getElementById("todoList");
 
-  renderCalendar();
-};
+const modal=document.getElementById("modal");
+const modalTitle=document.getElementById("modalTitle");
+const saveBtn=document.getElementById("save");
+const cancelBtn=document.getElementById("cancel");
+const resetBtn=document.getElementById("resetBtn");
+const captureBtn=document.getElementById("captureBtn");
 
-function renderCalendar(){
-  calendar.innerHTML = "";
-  updateMonthTitle();
+const timeFields=document.getElementById("timeFields");
 
-  const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
-  const lastDay = new Date(currentYear, currentMonth, 0).getDate();
+resetBtn.onclick = resetAll;
 
-  for(let i=0; i<firstDay; i++){
-    const empty = document.createElement("div");
-    empty.className = "empty-day";
-    calendar.appendChild(empty);
-  }
+const titleInput=document.getElementById("titleInput");
+const detailInput=document.getElementById("detailInput");
 
-  for(let day=1; day<=lastDay; day++){
-    const btn = document.createElement("button");
-    btn.className = "day";
-    btn.textContent = day;
+const colorInput=document.getElementById("colorInput");
+const presetColors=document.getElementById("presetColors");
+const editStart=document.getElementById("editStart");
+const editEnd=document.getElementById("editEnd");
 
-    const dateStr = getDateString(day);
+const addFromSideBtn=document.getElementById("addFromSide");
+const addTodoBtn=document.getElementById("addTodo");
 
-    if(hasData(dateStr)){
-      btn.classList.add("has-data");
+let editingItem=null;
+let isEditMode=false;
+let backupData=null;
 
-      const mark = document.createElement("small");
-      mark.textContent = "저장됨";
-      btn.appendChild(mark);
+let isTodoMode=false;
+let editingTodo=null;
+
+let isDragging = false;
+let dragStartIndex = null;
+let dragEndIndex = null;
+
+function setTimeFieldsVisible(visible){
+  timeFields.style.display = visible ? "block" : "none";
+}
+function setSelectedColor(color){
+  colorInput.value = color;
+
+  document.querySelectorAll(".color-chip").forEach(chip=>{
+    if(chip.dataset.color === color){
+      chip.classList.add("active");
+    }else{
+      chip.classList.remove("active");
     }
+  });
+}
 
-    btn.onclick = ()=>{
-      openPlanner(day);
+function renderPresetColors(){
+  presetColors.innerHTML = "";
+
+  presetColorList.forEach(color=>{
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "color-chip";
+    chip.style.background = color;
+    chip.dataset.color = color;
+
+    chip.onclick = ()=>{
+      setSelectedColor(color);
     };
 
-    calendar.appendChild(btn);
+    presetColors.appendChild(chip);
+  });
+}
+
+colorInput.addEventListener("input", ()=>{
+  setSelectedColor(colorInput.value);
+});
+const times=[];
+for(let i=7;i<27;i++){
+  let h=i%24;
+  for(let j=0;j<12;j++){
+    times.push(String(h).padStart(2,"0")+":"+String(j*5).padStart(2,"0"));
   }
 }
 
-renderCalendar();
+[times].forEach(arr=>{
+  arr.forEach(t=>{
+    [editStart,editEnd].forEach(sel=>{
+      const o=document.createElement("option");
+      o.value=t;
+      o.innerText=t;
+      sel.appendChild(o.cloneNode(true));
+    });
+  });
+});
+
+function clearDragPreview(){
+  document.querySelectorAll(".cell.drag-preview").forEach(c=>c.classList.remove("drag-preview"));
+}
+
+function paintDragPreview(s,e){
+  clearDragPreview();
+  for(let i=s;i<=e;i++){
+    const c=document.querySelector(`.cell[data-index='${i}']`);
+    if(c) c.classList.add("drag-preview");
+  }
+}
+
+let cellIndex=0;
+for(let r=0;r<20;r++){
+  const timeCell=document.createElement("div");
+  timeCell.className="time";
+  timeCell.innerText=times[r*12];
+  grid.appendChild(timeCell);
+
+  for(let c=0;c<12;c++){
+    const cell=document.createElement("div");
+    cell.className="cell";
+    cell.dataset.index=cellIndex;
+
+    if((cellIndex+1)%2===0 && (cellIndex+1)%12!==0){
+      cell.classList.add("v-strong");
+    }
+
+    cell.addEventListener("pointerdown", ()=>{
+      isDragging = true;
+      dragStartIndex = Number(cell.dataset.index);
+      dragEndIndex = dragStartIndex;
+      paintDragPreview(dragStartIndex, dragEndIndex);
+    });
+
+    grid.appendChild(cell);
+    cellIndex++;
+  }
+}
+
+document.addEventListener("pointermove", e=>{
+  if(!isDragging) return;
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  if(!el || !el.classList.contains("cell")) return;
+  const idx = Number(el.dataset.index);
+  dragEndIndex = idx;
+  let s = Math.min(dragStartIndex, dragEndIndex);
+  let e2 = Math.max(dragStartIndex, dragEndIndex);
+  paintDragPreview(s, e2);
+});
+
+document.addEventListener("pointerup", ()=>{
+  if(!isDragging) return;
+  isDragging = false;
+  clearDragPreview();
+
+  let s = Math.min(dragStartIndex, dragEndIndex);
+  let e = Math.max(dragStartIndex, dragEndIndex) + 1;
+
+  modalTitle.innerText="일정 추가";
+  isEditMode=false;
+  isTodoMode=false;
+  editingItem=null;
+  editingTodo=null;
+
+  setTimeFieldsVisible(true);
+
+  titleInput.value="";
+  detailInput.value="";
+  setSelectedColor(getRandomColor());
+
+  editStart.value=times[s];
+  editEnd.value=times[e] || times[times.length-1];
+
+  modal.style.display="flex";
+});
+
+function clearCells(s,e){
+  for(let i=s;i<e;i++){
+    const c=document.querySelector(`.cell[data-index='${i}']`);
+    if(c) c.style.background="";
+  }
+}
+
+function paintCells(s,e,color){
+  for(let i=s;i<e;i++){
+    const c=document.querySelector(`.cell[data-index='${i}']`);
+    if(c) c.style.background=color;
+  }
+}
+
+function sortSideList(){
+  const items = Array.from(listBox.querySelectorAll(".side-item"));
+  items.sort((a,b)=> Number(a.dataset.start) - Number(b.dataset.start));
+  items.forEach(item => listBox.appendChild(item));
+}
+
+function saveAll(){
+  const items = [];
+  document.querySelectorAll("#list .side-item").forEach(item=>{
+    items.push({
+      title:item.dataset.title,
+      detail:item.dataset.detail,
+      color:item.dataset.color,
+      s:Number(item.dataset.start),
+      e:Number(item.dataset.end)
+    });
+  });
+
+  const todos = [];
+  document.querySelectorAll("#todoList .side-item").forEach(item=>{
+    todos.push({
+      title:item.dataset.title,
+      detail:item.dataset.detail,
+      color:item.dataset.color
+    });
+  });
+
+  const data = {
+    title: plannerTitleInput.value,
+    items,
+    todos
+  };
+
+  localStorage.setItem(getStorageKey(), JSON.stringify(data));
+}
+
+function loadAll(){
+  const raw = localStorage.getItem(getStorageKey());
+  if(!raw) return;
+  const data = JSON.parse(raw);
+
+  if(data.title){
+    plannerTitleInput.value = data.title;
+  }
+
+  if(Array.isArray(data.items)){
+    data.items.forEach(it=>{
+      paintCells(it.s,it.e,it.color);
+      createSideItem(it.title,it.detail,it.color,it.s,it.e,false);
+    });
+  }
+
+  if(Array.isArray(data.todos)){
+    data.todos.forEach(td=>{
+      createTodoItem(td.title, td.detail, td.color || getRandomColor(), false);
+    });
+  }
+}
+
+function createSideItem(title,detail,color,sIdx,eIdx,save=true){
+  const item=document.createElement("div");
+  item.className="side-item";
+  item.dataset.start=sIdx;
+  item.dataset.end=eIdx;
+  item.dataset.title=title;
+  item.dataset.detail=detail;
+  item.dataset.color=color;
+
+  const colorBox=document.createElement("div");
+  colorBox.className="color-box";
+  colorBox.style.background=color;
+
+  const text=document.createElement("div");
+  text.className="text-box";
+  text.innerHTML=`<b>${title}</b><br><small>${detail}</small><br><small>⏰ ${times[sIdx]} ~ ${times[eIdx]}</small>`;
+
+  const editBtn=document.createElement("button");
+  editBtn.className="delete-btn";
+  editBtn.style.right="42px";
+  editBtn.style.background="#4caf50";
+  editBtn.innerText="수정";
+
+  editBtn.onclick=()=>{
+    isEditMode=true;
+    isTodoMode=false;
+    editingItem=item;
+    editingTodo=null;
+
+    setTimeFieldsVisible(true);
+
+    backupData = {
+      s: Number(item.dataset.start),
+      e: Number(item.dataset.end),
+      color: item.dataset.color
+    };
+
+    modalTitle.innerText="일정 수정";
+
+    titleInput.value=item.dataset.title;
+    detailInput.value=item.dataset.detail;
+    setSelectedColor(item.dataset.color);
+    editStart.value=times[item.dataset.start];
+    editEnd.value=times[item.dataset.end];
+
+    clearCells(item.dataset.start,item.dataset.end);
+    modal.style.display="flex";
+  };
+
+  const del=document.createElement("button");
+  del.className="delete-btn";
+  del.style.right="6px";
+  del.style.background="#ff5c5c";
+  del.innerText="삭제";
+
+  del.onclick=()=>{
+    clearCells(Number(item.dataset.start), Number(item.dataset.end));
+    item.remove();
+    saveAll();
+  };
+
+  item.append(colorBox,text,editBtn,del);
+  listBox.appendChild(item);
+  sortSideList();
+  if(save) saveAll();
+}
+
+function createTodoItem(title, detail, color, save=true){
+  const item=document.createElement("div");
+  item.className="side-item";
+  item.dataset.title=title;
+  item.dataset.detail=detail;
+  item.dataset.color=color;
+
+  const colorBox=document.createElement("div");
+  colorBox.className="color-box";
+  colorBox.style.background=color;
+
+  const text=document.createElement("div");
+  text.className="text-box";
+  text.innerHTML=`<b>${title}</b><br><small>${detail}</small>`;
+
+  const editBtn=document.createElement("button");
+  editBtn.className="delete-btn";
+  editBtn.style.right="42px";
+  editBtn.style.background="#4caf50";
+  editBtn.innerText="수정";
+
+  editBtn.onclick=()=>{
+    isTodoMode=true;
+    isEditMode=false;
+    editingTodo=item;
+    editingItem=null;
+
+    modalTitle.innerText="투두 수정";
+
+    titleInput.value=item.dataset.title;
+    detailInput.value=item.dataset.detail;
+    setSelectedColor(item.dataset.color);
+
+    setTimeFieldsVisible(false);
+
+    modal.style.display="flex";
+  };
+
+  const del=document.createElement("button");
+  del.className="delete-btn";
+  del.style.right="6px";
+  del.style.background="#ff5c5c";
+  del.innerText="삭제";
+
+  del.onclick=()=>{
+    item.remove();
+    saveAll();
+  };
+
+  item.append(colorBox,text,editBtn,del);
+  todoBox.appendChild(item);
+
+  if(save) saveAll();
+}
+
+saveBtn.onclick=()=>{
+  const title=titleInput.value.trim();
+  const detail=detailInput.value.trim();
+  const color=colorInput.value;
+
+  if(title === ""){
+    alert("⚠ 제목을 입력해주세요!");
+    return;
+  }
+
+  if(isTodoMode){
+    if(editingTodo){
+      editingTodo.remove();
+    }
+
+    createTodoItem(title, detail, color, true);
+
+    modal.style.display="none";
+    isTodoMode=false;
+    editingTodo=null;
+    isEditMode=false;
+    editingItem=null;
+    backupData=null;
+    return;
+  }
+
+  const sIdx=times.indexOf(editStart.value);
+  const eIdx=times.indexOf(editEnd.value);
+
+  if(eIdx <= sIdx){
+    alert("⚠ 종료 시간은 시작 시간보다 늦어야 합니다!");
+    return;
+  }
+
+  if(isEditMode && editingItem){
+    editingItem.remove();
+  }
+
+  paintCells(sIdx,eIdx,color);
+  createSideItem(title,detail,color,sIdx,eIdx,true);
+
+  modal.style.display="none";
+  isEditMode=false;
+  editingItem=null;
+  backupData=null;
+};
+
+cancelBtn.onclick=()=>{
+  if(!isTodoMode && isEditMode && backupData){
+    paintCells(backupData.s, backupData.e, backupData.color);
+  }
+
+  modal.style.display="none";
+  isEditMode=false;
+  editingItem=null;
+  backupData=null;
+  isTodoMode=false;
+  editingTodo=null;
+  setTimeFieldsVisible(true);
+};
+
+addFromSideBtn.onclick=()=>{
+  isEditMode=false;
+  isTodoMode=false;
+  editingItem=null;
+  editingTodo=null;
+
+  setTimeFieldsVisible(true);
+
+  modalTitle.innerText="일정 추가";
+  titleInput.value="";
+  detailInput.value="";
+  setSelectedColor(getRandomColor());
+  editStart.value=times[0];
+  editEnd.value=times[1];
+  modal.style.display="flex";
+};
+
+addTodoBtn.onclick=()=>{
+  isTodoMode=true;
+  isEditMode=false;
+  editingItem=null;
+  backupData=null;
+  editingTodo=null;
+
+  modalTitle.innerText="할 일 추가";
+  titleInput.value="";
+  detailInput.value="";
+  setSelectedColor(getRandomColor());
+
+  setTimeFieldsVisible(false);
+  modal.style.display="flex";
+};
+
+captureBtn.onclick = ()=>{
+  const target = document.getElementById("captureArea");
+
+  const btns = document.querySelectorAll(".delete-btn");
+  btns.forEach(b=>b.style.display="none");
+
+  const addBtn = document.getElementById("addFromSide");
+  addBtn.style.display = "none";
+
+  const todoAddBtn = document.getElementById("addTodo");
+  todoAddBtn.style.display = "none";
+
+  const dateBar = document.getElementById("dateBar");
+  dateBar.style.display = "none";
+
+  captureBtn.style.display = "none";
+  resetBtn.style.display = "none";
+
+  const wrapper = document.createElement("div");
+  wrapper.style.padding = "40px";
+  wrapper.style.background = "#f4f6fa";
+  wrapper.style.display = "inline-block";
+
+  const parent = target.parentNode;
+  const nextSibling = target.nextSibling;
+
+  parent.removeChild(target);
+  wrapper.appendChild(target);
+  parent.insertBefore(wrapper, nextSibling);
+
+  html2canvas(wrapper, { scale: 2 }).then(canvas=>{
+    const link = document.createElement("a");
+    link.download = "time_planner.jpeg";
+    link.href = canvas.toDataURL("image/jpeg", 0.95);
+    link.click();
+
+    parent.removeChild(wrapper);
+    parent.insertBefore(target, nextSibling);
+
+    btns.forEach(b=>b.style.display="block");
+    addBtn.style.display = "block";
+    todoAddBtn.style.display = "block";
+    captureBtn.style.display = "block";
+    resetBtn.style.display = "block";
+    dateBar.style.display = "flex";
+  });
+};
+
+datePicker.value = currentDate;
+
+datePicker.addEventListener("change", ()=>{
+  currentDate = datePicker.value;
+
+  const d = new Date(currentDate);
+  const yy = String(d.getFullYear()).slice(2);
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+
+  plannerTitleInput.value = `📆 Drag Time ${yy}${mm}${dd}`;
+
+  document.querySelectorAll(".cell").forEach(c=>c.style.background="");
+  listBox.innerHTML="";
+  todoBox.innerHTML="";
+
+  loadAll();
+});
+
+prevDay.onclick = ()=>{
+  const d = new Date(currentDate);
+  d.setDate(d.getDate()-1);
+  currentDate = d.toISOString().slice(0,10);
+  datePicker.value = currentDate;
+  datePicker.dispatchEvent(new Event("change"));
+};
+
+nextDay.onclick = ()=>{
+  const d = new Date(currentDate);
+  d.setDate(d.getDate()+1);
+  currentDate = d.toISOString().slice(0,10);
+  datePicker.value = currentDate;
+  datePicker.dispatchEvent(new Event("change"));
+};
+
+renderPresetColors();
+setSelectedColor(getRandomColor());
+loadAll();
 </script>
 </body>
 </html>
