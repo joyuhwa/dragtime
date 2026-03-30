@@ -8,7 +8,10 @@
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 <style>
-*{ box-sizing:border-box; }
+*{
+  box-sizing:border-box;
+  user-select:none;
+}
 
 body{
   font-family:Arial, sans-serif;
@@ -221,9 +224,9 @@ body{
 }
 
 #presetColors{
-  display:flex;
+  display:grid;
+  grid-template-columns: repeat(6, 1fr);
   gap:8px;
-  flex-wrap:wrap;
 }
 
 .color-chip{
@@ -326,11 +329,6 @@ body{
       <div id="todoList"></div>
     </div>
 
-    <div id="dateBar">
-      <button id="prevDay">◀</button>
-      <input type="date" id="datePicker">
-      <button id="nextDay">▶</button>
-    </div>
 
     <button id="captureBtn">📸 화면 저장</button>
     <button id="resetBtn">🗑 화면 초기화</button>
@@ -366,32 +364,32 @@ function getStorageKey(){
 }
 
 function resetAll(){
-  if(confirm("⚠ 모든 데이터가 삭제됩니다.\n완전히 초기화할까요?")){
+  if(confirm("⚠ 해당 날짜 플래너 데이터가 삭제됩니다.\n초기화할까요?")){
     localStorage.removeItem(getStorageKey());
     location.reload();
   }
 }
 
 const presetColorList = [
+  "#ff58c4",
   "#ff5b59",
   "#ff9b56",
   "#ffb954",
   "#ffdd50",
+  "#ffff4c",
   "#cdff4e",
   "#63ff51",
   "#55e1ff",
   "#58b1ff",
   "#5b68ff",
-  "#ff58c4"
+  "#bf55ff"
 ];
 
 function getRandomColor(){
   return presetColorList[Math.floor(Math.random()*presetColorList.length)];
 }
 
-const datePicker = document.getElementById("datePicker");
-const prevDay = document.getElementById("prevDay");
-const nextDay = document.getElementById("nextDay");
+
 const plannerTitleInput = document.getElementById("plannerTitle");
 
 const baseDate = new Date(currentDate);
@@ -551,7 +549,11 @@ document.addEventListener("pointerup", ()=>{
 
   let s = Math.min(dragStartIndex, dragEndIndex);
   let e = Math.max(dragStartIndex, dragEndIndex) + 1;
-
+  
+  if(hasOverlap(s, e)){
+    alert("⚠ 이미 등록된 일정과 시간이 겹칩니다!");
+    return;
+  }
   modalTitle.innerText="일정 추가";
   isEditMode=false;
   isTodoMode=false;
@@ -710,6 +712,23 @@ function createSideItem(title,detail,color,sIdx,eIdx,save=true){
   if(save) saveAll();
 }
 
+function hasOverlap(startIdx, endIdx, excludeItem = null){
+  const items = document.querySelectorAll("#list .side-item");
+
+  for(const item of items){
+    if(item === excludeItem) continue;
+
+    const itemStart = Number(item.dataset.start);
+    const itemEnd = Number(item.dataset.end);
+
+    if(startIdx < itemEnd && endIdx > itemStart){
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function createTodoItem(title, detail, color, save=true){
   const item=document.createElement("div");
   item.className="side-item";
@@ -769,12 +788,12 @@ saveBtn.onclick=()=>{
   const title=titleInput.value.trim();
   const detail=detailInput.value.trim();
   const color=colorInput.value;
-
+/*
   if(title === ""){
     alert("⚠ 제목을 입력해주세요!");
     return;
   }
-
+*/
   if(isTodoMode){
     if(editingTodo){
       editingTodo.remove();
@@ -798,7 +817,10 @@ saveBtn.onclick=()=>{
     alert("⚠ 종료 시간은 시작 시간보다 늦어야 합니다!");
     return;
   }
-
+  if(hasOverlap(sIdx, eIdx, isEditMode ? editingItem : null)){
+    alert("⚠ 이미 등록된 일정과 시간이 겹칩니다!");
+    return;
+  }
   if(isEditMode && editingItem){
     editingItem.remove();
   }
@@ -872,7 +894,7 @@ captureBtn.onclick = ()=>{
   todoAddBtn.style.display = "none";
 
   const dateBar = document.getElementById("dateBar");
-  dateBar.style.display = "none";
+  if(dateBar) dateBar.style.display = "none";
 
   captureBtn.style.display = "none";
   resetBtn.style.display = "none";
@@ -907,40 +929,9 @@ captureBtn.onclick = ()=>{
   });
 };
 
-datePicker.value = currentDate;
 
-datePicker.addEventListener("change", ()=>{
-  currentDate = datePicker.value;
 
-  const d = new Date(currentDate);
-  const yy = String(d.getFullYear()).slice(2);
-  const mm = String(d.getMonth()+1).padStart(2,"0");
-  const dd = String(d.getDate()).padStart(2,"0");
 
-  plannerTitleInput.value = `📆 Drag Time ${yy}${mm}${dd}`;
-
-  document.querySelectorAll(".cell").forEach(c=>c.style.background="");
-  listBox.innerHTML="";
-  todoBox.innerHTML="";
-
-  loadAll();
-});
-
-prevDay.onclick = ()=>{
-  const d = new Date(currentDate);
-  d.setDate(d.getDate()-1);
-  currentDate = d.toISOString().slice(0,10);
-  datePicker.value = currentDate;
-  datePicker.dispatchEvent(new Event("change"));
-};
-
-nextDay.onclick = ()=>{
-  const d = new Date(currentDate);
-  d.setDate(d.getDate()+1);
-  currentDate = d.toISOString().slice(0,10);
-  datePicker.value = currentDate;
-  datePicker.dispatchEvent(new Event("change"));
-};
 
 renderPresetColors();
 setSelectedColor(getRandomColor());
