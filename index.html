@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Drag Time</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<h9>ver. 26/3/30/20:55</h9>
+<h9>ver. 26/3/30/21:01</h9>
 <style>
 *{box-sizing:border-box;}
 
@@ -87,7 +87,21 @@ h1{
   box-shadow:0 4px 14px rgba(0,0,0,0.05);
   transition:.15s ease;
   position:relative;
+
+  color:#111;
+  -webkit-text-fill-color:#111;
+  -webkit-appearance:none;
+  appearance:none;
+  -webkit-tap-highlight-color:transparent;
 }
+
+.day:active,
+.day:focus{
+  color:#111;
+  -webkit-text-fill-color:#111;
+  outline:none;
+}
+  
 .empty-day{
   background:transparent;
   border:none;
