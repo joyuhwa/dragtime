@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Drag Time</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<h9>ver. 26/3/31/14:59</h9>
+<h9>ver. 26/3/31/15:04</h9>
 
 <style>
 *{box-sizing:border-box;}
@@ -342,34 +342,43 @@ function renderCalendar(){
 
 renderCalendar();
 </script>
-  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"></script>
+  <script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
 
 <script>
   // 1. 카카오 초기화 (여기에 너 키 넣기!)
   Kakao.init('4e97a58d5ccb2323c14010a02b763d3e');
-
+  console.log('Kakao loaded?', typeof Kakao !== 'undefined');
+  console.log('Initialized?', Kakao.isInitialized());
   // 2. 로그인 함수
   function kakaoLogin() {
+    console.log('login button clicked');
     Kakao.Auth.login({
+      
       success: function(response) {
+        console.log('login success', response);
 
         Kakao.API.request({
           url: '/v2/user/me',
           success: function(res) {
-            let name = res.kakao_account.profile.nickname;
-            let img = res.kakao_account.profile.profile_image_url;
+            console.log('user info', res);
+
+            let name = res.kakao_account?.profile?.nickname ?? '사용자';
+            let img = res.kakao_account?.profile?.profile_image_url ?? '';
 
             document.getElementById("userInfo").innerHTML = `
               <h3>${name}님 환영합니다!</h3>
-              <img src="${img}" width="80" style="border-radius:50%;">
+              ${img ? `<img src="${img}" width="80" style="border-radius:50%;">` : ''}
             `;
+          },
+          fail: function(error) {
+            console.log('user info fail', error);
+            alert('사용자 정보 불러오기 실패');
           }
         });
-
       },
       fail: function(error) {
-        alert("로그인 실패");
-        console.log(error);
+        console.log('login fail', error);
+        alert('로그인 실패: ' + JSON.stringify(error));
       }
     });
   }
