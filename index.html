@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <title>Drag Time</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<h9>ver. 26/3/31/10:44</h9>
+<h9>ver. 26/3/31/11:00</h9>
+<div id="userInfo"></div>
+<button onclick="kakaoLogin()">카카오 로그인</button>
 <style>
 *{box-sizing:border-box;}
 
@@ -339,7 +341,7 @@ function renderCalendar(){
 renderCalendar();
 </script>
   <script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
-<button onclick="kakaoLogin()">카카오 로그인</button>
+
 <script>
   // 1. 카카오 초기화 (여기에 너 키 넣기!)
   Kakao.init('4e97a58d5ccb2323c14010a02b763d3e');
@@ -352,8 +354,13 @@ renderCalendar();
         Kakao.API.request({
           url: '/v2/user/me',
           success: function(res) {
-            alert("로그인 성공!");
-            console.log(res);
+            let name = res.kakao_account.profile.nickname;
+            let img = res.kakao_account.profile.profile_image_url;
+
+            document.getElementById("userInfo").innerHTML = `
+              <h3>${name}님 환영합니다!</h3>
+              <img src="${img}" width="80" style="border-radius:50%;">
+            `;
           }
         });
 
